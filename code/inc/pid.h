@@ -9,6 +9,10 @@ float pid_positional(struct PID *this ,const float target, const float feedback)
 
 void speed_pid_update();//速度环 PID 更新函数
 
+void v_pid_update();//运动速度 PID 更新函数
+
+void pos_pid_update();//位置环 PID 更新函数
+
 void yaw_pid_update();//航向环 PID 更新函数
 
 #endif

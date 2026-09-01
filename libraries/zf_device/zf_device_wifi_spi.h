@@ -73,7 +73,7 @@
 #if     (WIFI_SPI_AUTO_CONNECT > 2)    
 #error "WIFI_SPI_AUTO_CONNECT 的值只能为 [0,1,2]" 
 #else   
-#define WIFI_SPI_TARGET_IP          "192.168.224.245"              // 连接目标的 IP
+#define WIFI_SPI_TARGET_IP          "192.168.113.245"              // 连接目标的 IP
 #define WIFI_SPI_TARGET_PORT        "1347"                      // 连接目标的端口
 #define WIFI_SPI_LOCAL_PORT         "1346"                      // 本机的端口 0：随机  可设置范围2048-65535  默认 6666
 #endif

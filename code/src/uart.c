@@ -99,8 +99,8 @@ void process_pos_data(void)
             uint16_t raw_x = *((uint16_t*)&full_frame[1]);
             uint16_t raw_y = *((uint16_t*)&full_frame[3]);
             
-            art_x = (float)raw_x / 1000.0f;
-            art_y = (float)raw_y / 1000.0f;
+            art_x =  1.0*(200+200*raw_x / 1000.0f);
+            art_y = -1.0*(200+200*raw_y / 1000.0f);
 
             // 从 FIFO 中彻底删除这已处理的 6 字节
             len = 6;

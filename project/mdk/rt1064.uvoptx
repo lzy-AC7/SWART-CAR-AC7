@@ -4434,18 +4434,6 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\code\inc\kalman_filter.h</PathWithFileName>
-      <FilenameWithoutPath>kalman_filter.h</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>13</GroupNumber>
-      <FileNumber>335</FileNumber>
-      <FileType>5</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
       <PathWithFileName>..\..\code\inc\cmd.h</PathWithFileName>
       <FilenameWithoutPath>cmd.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
@@ -4453,7 +4441,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>336</FileNumber>
+      <FileNumber>335</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4465,7 +4453,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>337</FileNumber>
+      <FileNumber>336</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4477,7 +4465,7 @@
     </File>
     <File>
       <GroupNumber>13</GroupNumber>
-      <FileNumber>338</FileNumber>
+      <FileNumber>337</FileNumber>
       <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4497,7 +4485,7 @@
     <RteFlg>0</RteFlg>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>339</FileNumber>
+      <FileNumber>338</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4509,7 +4497,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>340</FileNumber>
+      <FileNumber>339</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4521,7 +4509,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>341</FileNumber>
+      <FileNumber>340</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4533,7 +4521,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>342</FileNumber>
+      <FileNumber>341</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4545,7 +4533,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>343</FileNumber>
+      <FileNumber>342</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4557,7 +4545,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>344</FileNumber>
+      <FileNumber>343</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4569,19 +4557,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>345</FileNumber>
-      <FileType>1</FileType>
-      <tvExp>0</tvExp>
-      <tvExpOptDlg>0</tvExpOptDlg>
-      <bDave2>0</bDave2>
-      <PathWithFileName>..\..\code\src\kalman_filter.c</PathWithFileName>
-      <FilenameWithoutPath>kalman_filter.c</FilenameWithoutPath>
-      <RteFlg>0</RteFlg>
-      <bShared>0</bShared>
-    </File>
-    <File>
-      <GroupNumber>14</GroupNumber>
-      <FileNumber>346</FileNumber>
+      <FileNumber>344</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4593,7 +4569,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>347</FileNumber>
+      <FileNumber>345</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4605,7 +4581,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>348</FileNumber>
+      <FileNumber>346</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
@@ -4617,7 +4593,7 @@
     </File>
     <File>
       <GroupNumber>14</GroupNumber>
-      <FileNumber>349</FileNumber>
+      <FileNumber>347</FileNumber>
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>

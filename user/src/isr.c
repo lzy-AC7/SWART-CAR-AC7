@@ -43,26 +43,28 @@ void CSI_IRQHandler(void)
     __DSB();                    // 数据同步隔离
 }
 
-int ttt = 0;
-
 void PIT_IRQHandler(void)
 {
     /* 传感器值/解算 */
     if(pit_flag_get(PIT_CH0))
     {
-        world_position_get();//姿态位置更新
+        if(!processing)world_position_get();//姿态位置更新
         pit_flag_clear(PIT_CH0);
     }
     
     /* 运动控制 */
     if(pit_flag_get(PIT_CH1))
     {
-        yaw_pid_update();
-        solve_world2wheel(speed_target_angle,speed_target_value,pid_yaw.value);
-        speed_pid_update();
+        if(SYS_READY && !processing)
+        {
+            
+            pos_pid_update();
+            v_pid_update();
+            yaw_pid_update();
+            speed_pid_update();
 
-        motor_cmd();
-
+            motor_cmd();
+        }
         pit_flag_clear(PIT_CH1);
     }
     
@@ -71,21 +73,15 @@ void PIT_IRQHandler(void)
         sys_time++;
         if(car_2p_runing_flag && ++car_2p_timer_count == 5)car_2p_timer_count = 0,car_2p_timer_flag = 1;
         if(car_runing_path_flag && ++car_runing_path_timer_count == 5)car_runing_path_timer_count = 0,car_runing_path_timer_flag = 1;
-        
+        // wheel_speed_target[1] = wheel_speed_target[2] = wheel_speed_target[3] = wheel_speed_target[0] = (sinf(1.0f*sys_time/1000)>0?1:-1)*2000;
+        // speed_target_value = (sinf(1.0f*sys_time/500)>0?1:-1)*1000,speed_target_angle = 0;
         pit_flag_clear(PIT_CH2);
     }
     
     if(pit_flag_get(PIT_CH3))
     {
-        process_pos_data();//art位置数据接收
-
-        if(ready)
-        {
-            position_calibrate(200+200*art_x,-(200+200*art_y),yaw_angle),
-            player = GET_ID((int)art_x,(int)art_y);
-        }
-        
-        if(++ttt == 3)ttt = 0,key_scanner();//按键扫描
+        process_pos_data();
+        if(!fsm_flag && ++key_ctrl == 4)key_ctrl = 0,key_scanner();//按键扫描
         pit_flag_clear(PIT_CH3);
     }
 

@@ -69,6 +69,7 @@ void menu_back(bool en);					//返回上一级菜单
 void speed_change(bool en);					//关卡切换
 void plan_change(bool en);
 void OPTIMAL_SET(bool en);					//炸弹策略选择
+void wifi();
 void wifi_init(bool en);					//WIFI初始化
 void calibrate(bool en);					//陀螺仪标定
 void speed_target_change(bool en);			//速度目标设置

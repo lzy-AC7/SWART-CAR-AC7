@@ -2,8 +2,10 @@
 #include "data.h"
 
 /* 变量定义 */	
-float GYRO_DEADBAND_K =  1.0f;
+bool SYS_READY = 0;
+
 uint32 sys_time = 0;
+uint8 key_ctrl;
 
 /* debug uart*/
 uint8 debug_data[128];
@@ -42,49 +44,19 @@ float wheel_speed[4];
 /* IMU数据 */
 
 float gyro_z_raw = 0.0f;       // 原始转换后的角速度 (deg/s or rad/s)
-float acc_x_raw = 0.0f;        // 原始转换后的加速度 (m/s^2)
-float acc_y_raw = 0.0f;        // 原始转换后的加速度 (m/s^2)
-
 float gyro_z = 0.0f;           // 最终输出（去零漂+死区）
-float acc_x = 0.0f;            // 最终输出（去零漂）
-float acc_y = 0.0f;            // 最终输出（去零漂）
-
-/* ===== 加速度标定相关 ===== */
-bool  acc_calibrated = true;
-uint16 acc_epoch = 0;
-
-float acc_bias_x = 0.0f;
-float acc_bias_y = 0.0f;
-float acc_sum_x = 0.0f;
-float acc_sum_y = 0.0f;
-
-float acc_max_x = -FLT_MAX;
-float acc_min_x =  FLT_MAX;
-float acc_max_y = -FLT_MAX;
-float acc_min_y =  FLT_MAX;
-float acc_deadband_x = 0.0f;
-float acc_deadband_y = 0.0f;
-
-/* 加速度积分出的速度（仅由加速度积分得到，用于互补滤波） */
-float v_x_imu = 0.0f;
-float v_y_imu = 0.0f;
 
 /* ===== 角速度标定相关 ===== */
 bool  gyro_calibrated = false;
 uint16 gyro_epoch = 0;
-
-// float gyro_bias = 0.0f;        // 零偏
-// float gyro_sum = 0.0f;         // 累加和
-
-// float gyro_max = -FLT_MAX;     // 噪声极值
-// float gyro_min =  FLT_MAX;
-// float gyro_deadband = 0.0f;
 
 float gyro_bias[3];
 float gyro_deadband[3];
 float gyro_max[3], gyro_min[3], gyro_sum[3];
 
 float yaw_angle = YAW_ANGLE_INIT;         // 航向角
+float cos_yaw = 0;
+float sin_yaw = -1;
 
 /* 小车状态 */
 float x_world = 0.0f;        // 世界坐标 X
@@ -93,6 +65,8 @@ float y_world = 0.0f;        // 世界坐标 Y
 /* 小车运动学输出 */
 float v_x_car = 0.0f;      // 车体坐标系前向速度
 float v_y_car = 0.0f;      // 车体坐标系侧向速度
+float v_x_car_target = 0.0f;
+float v_y_car_target = 0.0f;
 float omega_car = 0.0f;    // 车体角速度（Z轴）计算自轮速
 
 /* 卡尔曼滤波器 - 速度融合 */
@@ -106,25 +80,49 @@ float v_y_encoder = 0.0f;   // 编码器测得的侧向速度
 /* 调试控制 */
 bool kalman_filter_enable = KALMAN_EN;  // 默认不使用卡尔曼融合
 
+float MECANUM_KX = 0.886f;              // 正向移动修正系数0.985f
+float MECANUM_KY = 0.759f;              // 侧向移动修正系数0.953f
+
 /* PID 控制器 */
 
+//轮速环
 PID pid_speed[4] = 
 {
-    {0.25f, 0.05f, 0.0f, 300.0f, 100.0f , 60.0f},
-    {0.25f, 0.05f, 0.0f, 300.0f, 100.0f , 60.0f},
-    {0.25f, 0.05f, 0.0f, 300.0f, 100.0f , 60.0f},
-    {0.25f, 0.05f, 0.0f, 300.0f, 100.0f , 60.0f}
+    {0.5f, 0.05f, 0.01f, 100.0f, 100.0f, 300.0f, 0.0f},
+    {0.5f, 0.05f, 0.01f, 100.0f, 100.0f, 300.0f, 0.0f},
+    {0.5f, 0.05f, 0.01f, 100.0f, 100.0f, 300.0f, 0.0f},
+    {0.5f, 0.05f, 0.01f, 100.0f, 100.0f, 300.0f, 0.0f}
 };
 
+//车体运动速度环
+PID pid_v_x_car =
+{
+    0.5f, 0.05f, 0.01f, 300.0f, 300.0f, 300.0f, 30.0f
+};
+
+PID pid_v_y_car =
+{
+    0.5f, 0.05f, 0.01f, 300.0f, 300.0f, 300.0f, 30.0f
+};
+
+//坐标环
+float pid_pos_speed_kp = 5.0;
+float pid_pos_speed_Kp;
+PID pid_pos_speed =
+{
+    4.5f, 0.0f, 0.0f, 100.0f, 300.0f, 5000.0f, 25.0f
+};
+
+//航向角环
 PID pid_yaw =
 {
-    7.0f, 0.00f, 0.0f, 300.0f, 100.0f,0.1f
+    7.0f, 0.0f, 0.0f, 360.0f, 360.0f, 360.0f, 0.5f
 };
 
 float wheel_speed_target[4];
 
 float yaw_init = -90.0;
-float x_init = 150;
+float x_init = 250;
 float y_init = -1200;
 
 float yaw_angle_target = 0.0f;
@@ -141,7 +139,6 @@ bool car_runing_path_flag = 0;
 uint16 car_runing_path_timer_count = 0;
 bool car_runing_path_timer_flag = 0;
 
-float run_speed = 2000;//运行速度
 bool over = 0;
 bool fast_flag = 1;
 
@@ -149,6 +146,7 @@ bool fast_flag = 1;
 int player;
 int A_path_x[251*10],A_path_y[251*10];
 int A_path_size;
+bool processing = 0;
 
 bool OPTIMAL = 0;//炸弹最优路径  0为最优模式
 int checkpoint = 0;

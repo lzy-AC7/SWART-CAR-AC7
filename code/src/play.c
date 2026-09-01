@@ -1,7 +1,7 @@
 #include "play.h"
 
-bool PLAN = 1;
-int BOM_PLAN = 1;// 0 1 2 3
+bool PLAN = 0;
+int BOM_PLAN = 0;// 0 1 2 3
 int BOM_PLAN_count,BOM_PLAN_init[MAX_SIZE],BOM_PLAN_size;
 int i,j;
 
@@ -522,14 +522,12 @@ void checkpoint1()
 
     if(min_G < 1e9)
     {
-        printf("**%d\n",min_G);
         make_path(player_t,box_init[min_p],target_init[min_dir]);
         for(i = path_size-1;i >= 0;i--)
             A_path_x[A_path_size] = path_x[i],A_path_y[A_path_size++] = path_y[i];
         A_path_x[A_path_size] = 333,A_path_y[A_path_size] = 333;
-        opt();
-        car_runing_path_start(yaw_angle_target);
         map[box_init[min_p]] = map[target_init[min_dir]] = 0;
+        car_runing_path_start(yaw_angle_target);
         sovled_count++;
     }
 }
@@ -1109,7 +1107,7 @@ void play(int mode)
                         for(i = 0;i < size;i++)
                             min_arr[0][i] = arr_A[0][i],min_arr[1][i] = arr_A[1][i];
                     }
-                    if(sys_time-time > size*251 && min_G < 1e9)timeout = 1;
+                    if(sys_time-time > size*100 && min_G < 1e9)timeout = 1;
                     if(timeout)break;
                 }while(nextPermutation(1,size));
                 if(timeout)break;
@@ -1178,19 +1176,9 @@ void checkpoint_set(int t)
     played_flag = 0,backed_flag = 0,map_init_flag = 0,boming = 0,checkpoint1_running = 0,checkpoint2_running = 0,sovled_count = 0;
     fsm_flag = 1,over = 0;
 }
-float yaw_T;
+
 void back()
 {
-    if(checkpoint == 2)
-    {
-        yaw_T = yaw_angle_target;
-        for(int i = 0;i <= 370;i++)
-        {
-            yaw_angle_target = (int)(yaw_T+i)%360;
-            system_delay_ms(5);
-        }
-        yaw_angle_target = (int)(yaw_T+10)%360;
-    }
     car_2p_start_map(0,5,yaw_angle_target);
     over = 1;
 }

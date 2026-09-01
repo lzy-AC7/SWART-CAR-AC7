@@ -2,6 +2,8 @@
 
 #define STOP_STANDARD 10
 
+Median5 encoder_filt[4];
+
 void encoder_init()
 {
     encoder_dir_init(ENCODER_1, ENCODER_1_LSB, ENCODER_1_DIR),
@@ -12,10 +14,10 @@ void encoder_init()
 
 void encoder_get()
 {
-    encoder[0] = ENCODER_1_FRONT_DIR*encoder_get_count(ENCODER_1);
-    encoder[1] = ENCODER_2_FRONT_DIR*encoder_get_count(ENCODER_2);
-    encoder[2] = ENCODER_3_FRONT_DIR*encoder_get_count(ENCODER_3);
-    encoder[3] = ENCODER_4_FRONT_DIR*encoder_get_count(ENCODER_4);
+    encoder[0] =  Median5_Update(&encoder_filt[0],ENCODER_1_FRONT_DIR*encoder_get_count(ENCODER_1));
+    encoder[1] =  Median5_Update(&encoder_filt[1],ENCODER_2_FRONT_DIR*encoder_get_count(ENCODER_2));
+    encoder[2] =  Median5_Update(&encoder_filt[2],ENCODER_3_FRONT_DIR*encoder_get_count(ENCODER_3));
+    encoder[3] =  Median5_Update(&encoder_filt[3],ENCODER_4_FRONT_DIR*encoder_get_count(ENCODER_4));
 
     wheel_speed[0] = encoder[0] * WHEEL_SPEED_FACTOR / SENSOR_SOLVE_dt;
     wheel_speed[1] = encoder[1] * WHEEL_SPEED_FACTOR / SENSOR_SOLVE_dt;
@@ -23,9 +25,9 @@ void encoder_get()
     wheel_speed[3] = encoder[3] * WHEEL_SPEED_FACTOR / SENSOR_SOLVE_dt;
 
     /* 从编码器计算小车体坐标系速度 */
-    v_x_encoder = 1.0 * (wheel_speed[0] + wheel_speed[1] + wheel_speed[2] + wheel_speed[3]) / 4.0f;
-    v_y_encoder = 1.0 *(-wheel_speed[0] + wheel_speed[1] + wheel_speed[2] - wheel_speed[3]) / 4.0f;
-    
+    v_x_encoder = MECANUM_KX * (wheel_speed[0] + wheel_speed[1] + wheel_speed[2] + wheel_speed[3]) / 4.0f;
+    v_y_encoder = MECANUM_KY *(-wheel_speed[0] + wheel_speed[1] + wheel_speed[2] - wheel_speed[3]) / 4.0f;
+
 	encoder_clear_count(ENCODER_1);
     encoder_clear_count(ENCODER_2);
     encoder_clear_count(ENCODER_3);

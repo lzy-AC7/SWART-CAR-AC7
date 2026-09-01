@@ -78,6 +78,7 @@ void stop()
     }
 }
 
+float debug_t1,debug_t2;
 void debug()
 {
     uint32 t = debug_read_ring_buffer(debug_data,128);
@@ -132,6 +133,29 @@ void debug()
                 sscanf((char*)buff, "f,%d",&a);
                 checkpoint_set(a);
             }
+            else if(buff[0] == 'p')
+            {
+                sscanf((char*)buff, "p,%f,%f",&x1,&y1);
+                car_2p_start_map(x1, y1, yaw_angle_target);
+            }
+            else if(buff[0] == 'u')
+            {
+                sscanf((char*)buff, "u,%f",&x1);
+                car_2p_start_map(GET_X(player), GET_Y(player)-x1, yaw_angle_target);
+            }
+            else if(buff[0] == 'd')
+            {
+                sscanf((char*)buff, "d,%f",&x1);
+                car_2p_start_map(GET_X(player), GET_Y(player)+x1, yaw_angle_target);
+            }else if(buff[0] == 'l')
+            {
+                sscanf((char*)buff, "l,%f",&x1);
+                car_2p_start_map(GET_X(player)-x1, GET_Y(player), yaw_angle_target);
+            }else if(buff[0] == 'r')
+            {
+                sscanf((char*)buff, "r,%f",&x1);
+                car_2p_start_map(GET_X(player)+x1, GET_Y(player), yaw_angle_target);
+            }
             else if(buff[0] == 'j')
             {
                 sscanf((char*)buff, "j,%f,%f,%f,%f", &x,&y,&x1,&y1);
@@ -139,7 +163,6 @@ void debug()
                     yaw_angle_target = atan2f(y, x)/PI_F*180.0f;
                 speed_target_angle = atan2f(y1, x1)/PI_F*180.0f,
                 speed_target_value = sqrtf(x1*x1+y1*y1);
-                
             }
         }
 
@@ -161,18 +184,28 @@ void debug()
         else if(wifi_data[0] == 's')sscanf((char*)wifi_data, "s:%f,%f", &x,&y),
                                 speed_target_angle = atan2f(y, x)/PI_F*180.0f,
                                 speed_target_value = sqrtf(x*x+y*y);
+        // if(wifi_data[0] == 'p')sscanf((char*)wifi_data, "p:%f", &pid_speed[2].Kp);
+        // if(wifi_data[0] == 'i')sscanf((char*)wifi_data, "i:%f", &pid_speed[2].Ki);
+        // if(wifi_data[0] == 'd')sscanf((char*)wifi_data, "d:%f", &pid_speed[2].Kd);
+        if(wifi_data[0] == 't')sscanf((char*)wifi_data, "t:%f", &yaw_angle_target);
     }
 
-    
+    // justfloat_add(1,wheel_speed_target[0]);
+    // justfloat_add(4,wheel_speed_target[0],wheel_speed_target[1],wheel_speed_target[2],wheel_speed_target[3]);
     // justfloat_add(4,wheel_speed[0],wheel_speed[1],wheel_speed[2],wheel_speed[3]);
-    // justfloat_add(4,acc_x,acc_y,v_x_imu,v_y_imu);
-    // justfloat_add(4,wheel_speed_target[0],wheel_speed[0],pid_speed[0].value,pid_speed[0].now_err);
-    // justfloat_add(4,pid_speed[0].now_err,pid_speed[1].now_err,pid_speed[2].now_err,pid_speed[3].now_err);
-    // justfloat_add(4,yaw_angle_target,yaw_angle,pid_yaw.value,pid_yaw.now_err);
-    // justfloat_add(6,x_world,200+200*art_x,y_world,-(200+200*art_y),yaw_angle,art_yaw);
-    // justfloat_add(2,x_world,y_world);
-    // justfloat_add(4,v_x_car,v_y_car,v_x_art,v_y_art);
-    // justfloat_add(3,v_x_art*v_x_art+v_y_art*v_y_art,v_x_car*v_x_car+v_y_car*v_y_car,(float)ka);
-
+    // justfloat_add(2,pid_speed[0].now_err,pid_speed[0].value);
+    // justfloat_add(2,yaw_angle_target,yaw_angle);
+    // justfloat_add(2,pid_pos.now_err,pid_pos.value);
+    // justfloat_add(2,x_target,y_target);
+    // justfloat_add(2,v_x_encoder,v_y_encoder);
+    // justfloat_add(2,v_x_car_target,v_y_car_target);
+    // justfloat_add(2,v_x_car,v_y_car);
+    // justfloat_add(2,acc_x,acc_y);
+    // justfloat_add(4,speed_target_value,v_y_car,pid_v_y_car.now_err,pid_v_y_car.value);
+    justfloat_add(1,speed_target_value);
+    justfloat_add(2,x_target,y_target);
+    justfloat_add(2,x_world,y_world);
+    justfloat_add(2,art_x,art_y);
+    // justfloat_add(2,debug_t1,debug_t2);
     justfloat_send();
 }

@@ -3,8 +3,13 @@
 
 #include "common.h"
 
-
-
+extern float x_target;
+extern float y_target;
+extern float x_start;
+extern float y_start;
+extern float distance;
+extern float path_length_sq;
+extern float dis_t;
 void car_2p_start(float x_target, float y_target, float yaw_target);
 
 void car_2p_start_map(float x, float y, float yaw);

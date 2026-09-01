@@ -1,114 +1,19 @@
 #include "cmd.h"
 
-#define V_MAX 2500.0f       // 最大速度
-#define V_MIN 200.0f         // 最小启动/停止速度
-float ACCEL = 50.0f;         // 加速度
-#define DEACCEL_K 0.5f      // 减速加速度增益
-#define OMEGA_ACC 1.0f      // 角加速度      
-float STOP_ERROR  = 50.0f;
+float STOP_ERROR  = 25.0f;
+#define OMEGA_ACC 2.0f      // 角加速度
 
-static float x_target = 0, y_target = 0, speed = 0, max_v = 0, distance_acc_need = 0, yaw_target = 0;
-static uint8 mode = 0;
+float x_target = 0.0f;
+float y_target = 0.0f;
+float x_start = 0.0f;
+float y_start = 0.0f;
+float path_length_sq = 0.0f;
+float distance = 0.0f;
+static float yaw_target = 0.0f;
+
 static bool turn_flag = 0;
 
-float dis = 0;
-
-float one_k;
-
-static float calculate_smooth_velocity(float distance, float current_v)
-{
-    // 1. 到达判定
-    if (distance < STOP_ERROR) return 0.0f;
-    
-    if (fast_flag)
-    {
-        if(dis <= 1.0)
-        {
-            STOP_ERROR = 100,ACCEL = 50;
-            one_k = 100;
-        }
-        else if(dis <= 2.0)
-        {
-            STOP_ERROR = 80,ACCEL = 110;
-            if (distance < 100) return 100.0f;
-            if (distance < 150) return 150.0f;
-            if (distance < 200) return 200.0f;
-            if (distance < 250) return 250.0f;
-        }
-        else if(dis <= 3.0)
-        {
-            STOP_ERROR = 100,ACCEL = 130;
-            if (distance < 150) return 150.0f;
-            if (distance < 200) return 200.0f;
-            if (distance < 250) return 250.0f;
-            if (distance < 300) return 300.0f;
-            // if (distance < 500) return 400.0f;
-        }
-        else
-        {
-            STOP_ERROR = 100,ACCEL = 150;
-        
-            if (distance < 150) return 200.0f;
-            if (distance < 200) return 300.0f;
-            if (distance < 300) return 350.0f;
-            if (distance < 500) return 400.0f;
-        }
-    }
-    else ACCEL = 50,STOP_ERROR = 50;
-    if (distance < 200)
-    {
-        float close_ratio = distance / 200.0f;
-        return one_k + (300.0f - one_k) * close_ratio;
-    }
-    
-    // 2. 动态计算当前最大减速能力（考虑减速增益）
-    float deaccel_a = ACCEL * DEACCEL_K;
-
-    // 3. 【核心优化】利用物理公式 v^2 = 2_a_s 反推当前距离允许的最大安全速度 limit_v
-    // 实际物理距离需要转换，除以 WHEEL_SPEED_FACTOR
-    float physical_dist = distance / WHEEL_SPEED_FACTOR;
-    
-    // 理论上能刹住的最大速度：V = sqrt(V_MIN^2 + 2 * a * s)
-    float limit_v = sqrtf((V_MIN * V_MIN) + (2.0f * deaccel_a * physical_dist));
-    
-    // 限制最大速度不能超过设定的 max_v
-    if (limit_v > max_v) limit_v = max_v;
-
-    float target_v = 0.0f;
-
-    // 4. 速度规划决策
-    // 如果当前速度加上一个周期的加速度后，依然小于安全限速，说明处于【加速段/匀速段】
-    if (current_v + ACCEL < limit_v)
-    {
-        target_v = current_v + ACCEL;
-    }
-    else
-    {
-        // 否则，强制进入【减速段】。直接紧贴安全限速曲线下滑，保证最高的减速效率
-        // 这样长距离时会在末端完美平滑减速；短距离时会因为 limit_v 限制，直接快起快停
-        target_v = limit_v;
-
-        // 限制减速斜率，防止超出电机的物理减速极限（防止抖动或过载）
-        if (target_v < current_v - deaccel_a) target_v = current_v - deaccel_a;
-    }
-
-    // 5. 最小速度保护与平滑
-    if (target_v < V_MIN) target_v = V_MIN;
-
-    // 用于给 mode == 1 做转向判定的动态距离更新
-    // 逆向计算：当前车速刹车到 V_MIN 到底需要多少距离
-    if (current_v > V_MIN)
-    {
-        distance_acc_need = ((current_v * current_v) - (V_MIN * V_MIN)) / (2.0f * deaccel_a) * WHEEL_SPEED_FACTOR;
-    }
-    else
-    {
-        distance_acc_need = 0.0f;
-    }
-
-    return target_v;
-}
-
+// 角度规范化
 static float normalize_angle(float angle)
 {
     while (angle > 180.0f) angle -= 360.0f;
@@ -116,6 +21,7 @@ static float normalize_angle(float angle)
     return angle;
 }
 
+// 角度逼近
 static float approach_angle(float current, float target, float step)
 {
     float diff = normalize_angle(target - current);
@@ -123,60 +29,79 @@ static float approach_angle(float current, float target, float step)
     return normalize_angle(current + copysignf(step, diff));
 }
 
+// 2P运动逻辑
 void car_2p()
 {
     if (!car_2p_runing_flag) return;
     if (!car_2p_timer_flag) return;
-    else car_2p_timer_flag = 0;
-        
-    float dx = x_target - x_world;
-    float dy = y_target - y_world;
-    float distance = sqrtf(dx * dx + dy * dy);
-    float target_angle = atan2f(dy, dx) / PI_F * 180.0f;    
+    car_2p_timer_flag = 0;
 
     // 到达及原位旋转判定
     if (distance < STOP_ERROR || turn_flag)
     {
         turn_flag = 1; 
-        GYRO_DEADBAND_K = 2.0;
+        
+        // 到达后平移速度清零
+        speed_target_value = 0.0f; 
+        
+        // 偏航角逼近逻辑
         yaw_angle_target = approach_angle(yaw_angle_target, yaw_target, OMEGA_ACC);
-        speed_target_value = 0.0f;
-        if(yaw_angle_target == yaw_target&& encoder[0] + encoder[1] + encoder[2] + encoder[3] < 10)
+        
+        // 判定旋转是否结束 (角度到位且编码器脉冲数极小证明车身稳定)
+        if (yaw_angle_target == yaw_target)
         {
             speed_target_angle = yaw_angle_target;
-            car_2p_runing_flag = car_2p_timer_count = car_2p_timer_flag = turn_flag = 0;
-            GYRO_DEADBAND_K = 1.0;
+            car_2p_runing_flag = 0;
+            car_2p_timer_count = 0;
+            x_start = x_world;
+            y_start = y_world;
+            turn_flag = 0;
         }
-        return;
     }
-
-    // 计算动态目标速度
-    float target_speed = calculate_smooth_velocity(distance, speed_target_value);
-    speed_target_angle = target_angle;
-    speed_target_value = target_speed;
 }
 
+// 2P运动触发初始化
 void car_2p_start(float x, float y, float yaw)
 {
+    x_start = x_world;
+    y_start = y_world;
     x_target = x;
     y_target = y;
+    float ab_x = x_target - x_start;
+    float ab_y = y_target - y_start;
+    path_length_sq = ab_x * ab_x + ab_y * ab_y;
     yaw_target = yaw;
-    speed_target_value = 0.0f; // 每次启动从 0 开始
-    car_2p_timer_count = car_2p_timer_flag = 0;
+    
+    // 状态机重置
+    speed_target_value = 0.0f; 
+    turn_flag = 0;
+    car_2p_timer_count = 0;
+    car_2p_timer_flag = 0;
     car_2p_runing_flag = 1;
-
-    max_v = (run_speed > V_MAX) ? V_MAX : run_speed; 
-    if (max_v < V_MIN) max_v = V_MIN;
-
-    distance_acc_need = 0.0f; // 初始设为 0，交由循环动态计算
 }
 
+float dis_t;
+
+// 栅格地图坐标系启动接口
 void car_2p_start_map(float x, float y, float yaw)
 {
-    if(x > 13 || x < 0 || y > 9 || y < 0)return;
-    dis = sqrtf((GET_X(player)-x)*(GET_X(player)-x)+(GET_Y(player)-y)*(GET_Y(player)-y));
-    float world_x = 200 + 100 + x * 200, world_y = -(200 + 100 + y * 200);
-    car_2p_start(world_x, world_y, yaw);
+    if(x > 13 || x < 0 || y > 9 || y < 0) return;
+    dis_t = sqrtf((x-GET_X(player))*(x-GET_X(player))+(y-GET_Y(player))*(y-GET_Y(player)));
+         if(dis_t <= 1 )MECANUM_KX = 0.770f,MECANUM_KY = 0.770f,pid_pos_speed_Kp = 4.5;
+    else if(dis_t <= 2 )MECANUM_KX = 0.800f,MECANUM_KY = 0.820f,pid_pos_speed_Kp = 4.0;
+    else if(dis_t <= 3 )MECANUM_KX = 0.900f,MECANUM_KY = 0.900f,pid_pos_speed_Kp = 4.0;
+    else if(dis_t <= 4 )MECANUM_KX = 0.940f,MECANUM_KY = 0.940f,pid_pos_speed_Kp = 4.0;
+    else if(dis_t <= 5 )MECANUM_KX = 0.940f,MECANUM_KY = 0.940f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 6 )MECANUM_KX = 0.940f,MECANUM_KY = 0.940f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 7 )MECANUM_KX = 0.940f,MECANUM_KY = 0.960f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 8 )MECANUM_KX = 0.960f,MECANUM_KY = 0.980f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 9 )MECANUM_KX = 1.000f,MECANUM_KY = 1.000f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 10)MECANUM_KX = 1.100f,MECANUM_KY = 1.000f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 11)MECANUM_KX = 1.300f,MECANUM_KY = 1.100f,pid_pos_speed_Kp = 3.5;
+    else if(dis_t <= 12)MECANUM_KX = 1.300f,MECANUM_KY = 1.100f,pid_pos_speed_Kp = 3.5;
+    else                MECANUM_KX = 1.300f,MECANUM_KY = 1.100f,pid_pos_speed_Kp = 3.5;
+
+    car_2p_start(200 + 100 + x * 200, -(200 + 100 + y * 200), yaw);
 }
 
 int k = 0;
@@ -227,7 +152,7 @@ void car_runing_path()
         else
             car_2p_start_map(A_path_x[k], A_path_y[k], yaw_angle_target);
 
-        // printf("%d %d %f %f\n",A_path_x[k], A_path_y[k], yaw_angle_target,yaw_target_t);
+        // printf("%d %d %f\n",A_path_x[k], A_path_y[k], yaw_target_t);
     }
     else if (k == A_path_size)
     {

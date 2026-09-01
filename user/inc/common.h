@@ -11,17 +11,17 @@
 /*------------------------------- 编码器 -------------------------------*/
 
 /* 系统时钟 */
-#define SYS_PIT_CH 						( PIT_CH2 )				// 按键扫描中断号
-#define SYS_PIT_TIME 					( 1 )					// 按键扫描中断周期 ms
+#define SYS_PIT_CH 						( PIT_CH2 )				// 系统时钟中断号
+#define SYS_PIT_TIME 					( 1 )					// 系统时钟中断周期 ms
 
 /* 传感器时钟 */
 #define SENSOR_SOLVE_PIT_CH 			( PIT_CH0 ) 			// 传感器值/解算获取中断号
-#define SENSOR_SOLVE_PIT_TIME 			( 3 ) 					// 传感器值/解算获取中断周期 ms
+#define SENSOR_SOLVE_PIT_TIME 			( 5 ) 					// 传感器值/解算获取中断周期 ms
 #define SENSOR_SOLVE_dt                 ( (float)SENSOR_SOLVE_PIT_TIME / 1000 )
 
 /* 按键时钟 */
 #define KEY_PIT_CH 						( PIT_CH3 )				// 按键扫描中断号
-#define KEY_PIT_TIME 					( 3 )					// 按键扫描中断周期 ms
+#define KEY_PIT_TIME 					( 5 )					// 按键扫描中断周期 ms
 
 /*控制时钟*/
 
@@ -63,11 +63,9 @@
 */
 #define YAW_ANGLE_INIT  ( -90.0f )
 #define GYRO_CALIB_EPOCH   1500          // 标定采样点数（建议 500~2000）
+#define GYRO_DEADBAND_K    2.0f         // 死区放大系数
 
 #define YAW_ALPHA          1.0f         // 互补滤波计算航向角系数
-
-#define MECANUM_KX  0.985f              // 正向移动修正系数0.985f
-#define MECANUM_KY  0.933f              // 侧向移动修正系数0.953f
 
 /* ============ 卡尔曼滤波器参数配置 ============ */
 #define KALMAN_EN               false
@@ -125,7 +123,6 @@
 #include "motor.h"
 #include "pid.h"
 #include "solve.h"
-#include "kalman_filter.h"
 #include "cmd.h"
 #include "play.h"
 #include "uart.h"

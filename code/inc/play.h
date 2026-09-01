@@ -25,5 +25,4 @@ void checkpoint2();
 void play(int mode);
 void checkpoint_set(int t);
 void fsm();
-void back();
 #endif // !_PLAY_H

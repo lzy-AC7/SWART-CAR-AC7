@@ -136,13 +136,16 @@ void menu_runing(void)
 {
 	ips200_clear();
 	ips200_full(RGB565_WHITE);
-	while(!gyro_calibrated || !acc_calibrated);
-	position_calibrate(x_init,y_init,yaw_init);
+	position_calibrate(art_x,art_y,yaw_init);
+	x_start = x_target = art_x,y_start = y_target = art_y;
+	//ips200_show_rgb565_image(0, 0, (const uint16 *)gImage_holo, 320, 240, 320, 240, 0);
+	while(!gyro_calibrated);
 	ips200_clear();
+	// wifi();
+	SYS_READY = 1;
 	printf("READY!!\n");
 	while(1)
 	{
-		
 		if(key_get_state(KEY_START) == KEY_SHORT_PRESS)
 			key_clear_state(KEY_START),system_delay_ms(100),checkpoint_set(0);
 		if(over && checkpoint != 0 && !car_runing_path_flag && !car_2p_runing_flag)
@@ -250,6 +253,40 @@ void OPTIMAL_SET(bool en)
 	if(key_get_state(KEY_RIGHT) == KEY_SHORT_PRESS)key_clear_state(KEY_RIGHT),OPTIMAL^=1;
 }
 
+void wifi()
+{
+	uint8 t = 0;
+	while(wifi_spi_init(WIFI_SSID_TEST, WIFI_PASSWORD_TEST))
+	{
+		printf("\r\n connect wifi failed. \r\n");
+		system_delay_ms(100);                                                   // 初始化失败等待 100ms
+		if(++t>3)return;
+	}
+	
+	printf("\r\n module version:%s", wifi_spi_version);      					// 模块固件版本
+	printf("\r\n module mac    :%s", wifi_spi_mac_addr);     					// 模块MAC信息
+	printf("\r\n module ip     :%s", wifi_spi_ip_addr_port); 					// 模块IP地址
+
+	// zf_device_wifi_spi.h 文件内的宏定义可以修改模块连接(建立) WIFI 之后，是否自动连接 TCP 服务器、创建 UDP 连接
+	if(0 == WIFI_SPI_AUTO_CONNECT)                                              // 如果没有开启自动连接 就需要手动连接目标 IP
+	{
+		uint8 t = 0;
+		while(wifi_spi_socket_connect(                                          // 向指定目标 IP 的端口建立 TCP 连接
+			"UDP",                                                              // 指定使用TCP方式通讯
+			WIFI_SPI_TARGET_IP,                                                 // 指定远端的IP地址，填写上位机的IP地址
+			WIFI_SPI_TARGET_PORT,                                               // 指定远端的端口号，填写上位机的端口号，通常上位机默认是8080
+			WIFI_SPI_LOCAL_PORT))                                               // 指定本机的端口号
+		{
+			// 如果一直连接失败，考虑一下是不是没有接模块复位
+			printf("\r\n Connect UDP Servers error, try again.");
+			system_delay_ms(100);                                               // 连接失败等待 100ms
+			if(++t>3)return;
+		}
+	}
+	wifi_spi_send_string("Hello WIFI !\r\n");
+	wifi_en = true;
+}
+
 /* WIFI初始化函数 */
 void wifi_init(bool en)
 {
@@ -260,43 +297,14 @@ void wifi_init(bool en)
 	{
 		key_clear_state(KEY_RIGHT);
 		ips200_show_char(MENU_ROW_WIDTH/2,2*MENU_ROW_HEIGHT,'-');
-		uint8 t = 0;
-		while(wifi_spi_init(WIFI_SSID_TEST, WIFI_PASSWORD_TEST))
-		{
-			printf("\r\n connect wifi failed. \r\n");
-			system_delay_ms(100);                                                   // 初始化失败等待 100ms
-			if(++t>3)return;
-		}
-		
-		printf("\r\n module version:%s", wifi_spi_version);      					// 模块固件版本
-		printf("\r\n module mac    :%s", wifi_spi_mac_addr);     					// 模块MAC信息
-		printf("\r\n module ip     :%s", wifi_spi_ip_addr_port); 					// 模块IP地址
-
-		// zf_device_wifi_spi.h 文件内的宏定义可以修改模块连接(建立) WIFI 之后，是否自动连接 TCP 服务器、创建 UDP 连接
-		if(0 == WIFI_SPI_AUTO_CONNECT)                                              // 如果没有开启自动连接 就需要手动连接目标 IP
-		{
-			uint8 t = 0;
-			while(wifi_spi_socket_connect(                                          // 向指定目标 IP 的端口建立 TCP 连接
-				"UDP",                                                              // 指定使用TCP方式通讯
-				WIFI_SPI_TARGET_IP,                                                 // 指定远端的IP地址，填写上位机的IP地址
-				WIFI_SPI_TARGET_PORT,                                               // 指定远端的端口号，填写上位机的端口号，通常上位机默认是8080
-				WIFI_SPI_LOCAL_PORT))                                               // 指定本机的端口号
-			{
-				// 如果一直连接失败，考虑一下是不是没有接模块复位
-				printf("\r\n Connect UDP Servers error, try again.");
-				system_delay_ms(100);                                               // 连接失败等待 100ms
-				if(++t>3)return;
-			}
-		}
-		wifi_spi_send_string("Hello WIFI !\r\n");
-		wifi_en = true;
+		wifi();
 	}
 	
 }
 
 void calibrate(bool en)
 {
-	if(gyro_calibrated && acc_calibrated){ips200_show_char(MENU_ROW_WIDTH/2,7*MENU_ROW_HEIGHT,'*');}
+	if(gyro_calibrated){ips200_show_char(MENU_ROW_WIDTH/2,7*MENU_ROW_HEIGHT,'*');}
 	else ips200_show_char(MENU_ROW_WIDTH/2,7*MENU_ROW_HEIGHT,'X');
 	if(!en)return;
 	if(key_get_state(KEY_PRESS) == KEY_SHORT_PRESS)
@@ -316,13 +324,7 @@ void calibrate(bool en)
 		gyro_min[0] = gyro_min[1] = gyro_min[2] = 0;
 		gyro_sum[0] = gyro_sum[1] = gyro_sum[2] = 0;
 		/* reset accel calibration data */
-		acc_calibrated = false;
-		acc_epoch = 0;
-		acc_bias_x = acc_bias_y = 0.0f;
-		acc_sum_x = acc_sum_y = 0.0f;
-		acc_max_x = acc_max_y = -FLT_MAX;
-		acc_min_x = acc_min_y =  FLT_MAX;
-		acc_deadband_x = acc_deadband_y = 0.0f;
+
 		/* reset navigation state */
 		position_calibrate(150,-1200,90);
 	}

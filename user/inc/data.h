@@ -3,16 +3,18 @@
 
 /* 变量类型定义 */
 
-extern float GYRO_DEADBAND_K;        // 死区放大系数
-
+//-------------------------------------------------------------------------------------------------------------------
+//	P, I, D, 积分限制, 变化率限制, 输出限制, 死区
+//-------------------------------------------------------------------------------------------------------------------
 typedef struct PID
 {
 	/* PID 参数 */
 	float Kp;
 	float Ki;
 	float Kd;
-	float output_limit;
 	float i_limit;
+	float delta_limit;
+	float output_limit;
     float output_deadband;
 	
 	/* PID 变量 */  
@@ -45,9 +47,10 @@ typedef struct
 
 
 /* 数据变量 */ 
+extern bool SYS_READY;
 
 extern uint32 sys_time;
-
+extern uint8 key_ctrl;
 /* debug uart*/
 extern uint8 debug_data[128];
 
@@ -105,51 +108,25 @@ extern float wheel_speed[4];
 extern float gyro_z_raw;                        // 原始转换后的角速度 (deg/s or rad/s)
 extern float gyro_z;                            // 最终输出（去零漂+死区）
 
-/* 加速度原始与处理值 */
-extern float acc_x_raw;                         // 原始转换后的加速度 (m/s^2)
-extern float acc_y_raw;
-extern float acc_x;                             // 最终输出（去零漂）
-extern float acc_y;
-
-/* 加速度标定相关 */
-extern bool  acc_calibrated;
-extern uint16 acc_epoch;
-extern float acc_bias_x;
-extern float acc_bias_y;
-extern float acc_sum_x;
-extern float acc_sum_y;
-extern float acc_max_x;
-extern float acc_min_x;
-extern float acc_max_y;
-extern float acc_min_y;
-extern float acc_deadband_x;
-extern float acc_deadband_y;
-extern float v_x_imu;    /* 由加速度积分得到的速度（车体系） */
-extern float v_y_imu;
-
 /* ===== 角速度标定相关 ===== */
 #define FLT_MAX 3.402823466e+38F
 extern bool  gyro_calibrated;
 extern uint16 gyro_epoch;
 
-// extern float gyro_bias;                         // 零偏
-// extern float gyro_sum;                          // 累加和
-
-// extern float gyro_max;                          // 噪声极值
-// extern float gyro_min;
-// extern float gyro_deadband;
-
 extern float gyro_bias[3];
 extern float gyro_deadband[3];
 extern float gyro_max[3], gyro_min[3], gyro_sum[3];
 
-extern float gyro_z_lpf;
 extern float yaw_angle;                         // 航向角
-
+extern float cos_yaw;
+extern float sin_yaw;
 extern float x_world;        // 世界坐标 X
 extern float y_world;        // 世界坐标 Y
+
 extern float v_x_car;      // 车体坐标系前向速度
 extern float v_y_car;      // 车体坐标系侧向速度
+extern float v_x_car_target;
+extern float v_y_car_target;
 extern float omega_car;    // 车体角速度（Z轴）计算自轮速
 
 /* 卡尔曼滤波器 - 速度融合 */
@@ -159,13 +136,22 @@ extern float v_x_encoder;   // 编码器测得的前向速度
 extern float v_y_encoder;   // 编码器测得的侧向速度
 /* 调试控制 */
 extern bool kalman_filter_enable;  // 如果为 true, 则直接使用编码器速度而不融合
+
+extern float MECANUM_KX;
+extern float MECANUM_KY;
+
 /* PID 控制器 */
 
 extern PID pid_speed[4];
+extern PID pid_v_x_car;
+extern PID pid_v_y_car;
+extern float pid_pos_speed_kp;
+extern float pid_pos_speed_Kp;
+extern PID pid_pos_speed;
 extern PID pid_yaw;
+
 extern float wheel_speed_target[4];
 
-extern float yaw_init;
 extern float yaw_init;
 extern float x_init;
 extern float y_init;
@@ -184,7 +170,6 @@ extern bool car_runing_path_flag;
 extern uint16 car_runing_path_timer_count;
 extern bool car_runing_path_timer_flag;
 
-extern float run_speed;
 extern bool over;
 extern bool fast_flag;
 
@@ -194,6 +179,7 @@ extern int A_path_size;
 
 extern bool OPTIMAL;//炸弹最优路径
 extern int checkpoint;
+extern bool processing;
 
 /* 底盘参数*/
 #define ENCODER_LINE_NUM		(float)(1024)			// 编码器线数

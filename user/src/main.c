@@ -41,7 +41,7 @@ int main(void)
     clock_init(SYSTEM_CLOCK_600M);  // 不可删除
     debug_init();                   // 调试端口初始化
     printf("ready!\n");
-    system_delay_ms(100);
+    system_delay_ms(500);
     gpio_init(B9, GPO, 0, GPO_PUSH_PULL);//led
     
     // 此处编写用户代码 例如外设初始化代码等
@@ -79,11 +79,13 @@ int main(void)
 
     // //中断使能
     pit_enable(SYS_PIT_CH);
+    system_delay_ms(1);
     pit_enable(SENSOR_SOLVE_PIT_CH);
+    system_delay_ms(1);
     pit_enable(KEY_PIT_CH);
+    system_delay_ms(1);
     pit_enable(CONTROL_PIT_CH);
     
-
     gpio_toggle_level(B9);
 
     while(1)

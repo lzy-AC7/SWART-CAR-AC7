@@ -2110,11 +2110,6 @@
               <FilePath>..\..\code\inc\solve.h</FilePath>
             </File>
             <File>
-              <FileName>kalman_filter.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\code\inc\kalman_filter.h</FilePath>
-            </File>
-            <File>
               <FileName>cmd.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\code\inc\cmd.h</FilePath>
@@ -2168,11 +2163,6 @@
               <FileName>solve.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\code\src\solve.c</FilePath>
-            </File>
-            <File>
-              <FileName>kalman_filter.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\code\src\kalman_filter.c</FilePath>
             </File>
             <File>
               <FileName>cmd.c</FileName>
