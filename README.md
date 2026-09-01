@@ -14,7 +14,7 @@ project：keil项目
 
 user：main
 
-PCB：PCB
+PCB：RT1064主驱一体板
 
 SW：结构建模
 
